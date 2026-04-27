@@ -1,26 +1,97 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User, UserDocument } from './schemas/user.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+
+  async create(createUserDto: CreateUserDto) {
+    const res = await new this.userModel(createUserDto).save();
+
+    if (!res) {
+      throw new InternalServerErrorException(
+        `could not save user:${createUserDto.email} to database`,
+      );
+    }
+
+    return {
+      message: `user:${createUserDto.email} created successfully`,
+    };
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll() {
+    const res = await this.userModel.find().exec();
+
+    if (!res) {
+      throw new InternalServerErrorException(
+        `could not retrieve users from database`,
+      );
+    }
+
+    return {
+      message: `users retrieved successfully`,
+      data: res,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(email: string) {
+    const res = await this.userModel.findOne({ email }).exec();
+
+    if (!res) {
+      throw new NotFoundException(`user:${email} not found`);
+    }
+
+    return {
+      message: `user:${email} retrieved successfully`,
+      data: res,
+    };
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(email: string, updateUserDto: UpdateUserDto) {
+    const found = await this.userModel.findOne({ email }).exec();
+
+    if (!found) {
+      throw new NotFoundException(`user:${email} not found`);
+    }
+
+    const res = await this.userModel.updateOne({ email }, updateUserDto).exec();
+
+    if (!res) {
+      throw new InternalServerErrorException(
+        `could not update user:${email} in database`,
+      );
+    }
+
+    return {
+      message: `user:${email} updated successfully`,
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(email: string) {
+    const found = await this.userModel.findOne({ email }).exec();
+
+    if (!found) {
+      throw new NotFoundException(`user:${email} not found`);
+    }
+
+    const res = await this.userModel.deleteOne({ email }).exec();
+
+    if (!res) {
+      throw new InternalServerErrorException(
+        `could not delete user:${email} from database`,
+      );
+    }
+
+    return {
+      message: `user:${email} deleted successfully`,
+    };
   }
 }
