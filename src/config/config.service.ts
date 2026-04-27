@@ -16,4 +16,8 @@ export class ConfigService {
       uri: `mongodb://${this.env.get('DB_HOST')}:${this.env.getNumber('DB_PORT')}`,
     };
   }
+
+  get jwtSecret(): string {
+    return this.env.get('JWT_SECRET');
+  }
 }
