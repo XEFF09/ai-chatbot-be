@@ -18,7 +18,10 @@ pipeline {
     stage('Set Version') {
       steps {
         script {
-          env.SHORT_SHA = env.GIT_COMMIT.take(7)
+          env.SHORT_SHA = sh(
+            script: "git rev-parse --short HEAD",
+            returnStdout: true
+          ).trim()
         }
       }
     }
