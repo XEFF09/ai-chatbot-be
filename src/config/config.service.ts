@@ -15,7 +15,7 @@ export class ConfigService {
       name: this.env.get('DB_DATABASE'),
       username: this.env.get('DB_USERNAME'),
       password: this.env.get('DB_PASSWORD'),
-      uri: `mongodb://${this.env.get('DB_HOST')}:${this.env.getNumber('DB_PORT')}`,
+      uri: this.env.get('DB_URI'),
     };
   }
 
