@@ -20,10 +20,13 @@ pipeline {
         // Triggered when a PR is OPEN targeting 'dev'
         stage('PR Build (feature → dev)') {
             when {
-                changeRequest target: 'dev'
+                allOf {
+                    changeRequest() 
+                    expression { env.CHANGE_TARGET == 'dev' }
+                }
             }
             steps {
-                echo "Running Dev PR Build for ${env.CHANGE_ID}"
+                echo "PR Target is: ${env.CHANGE_TARGET}"
                 sh "docker build -f ./docker/dev.Dockerfile -t ${IMAGE_NAME}:pr-${SHORT_SHA} ."
             }
         }
