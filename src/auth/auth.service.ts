@@ -39,9 +39,9 @@ export class AuthService {
     return signProps;
   }
 
-  loginWithJwt(user: { email: string; userId: string }) {
+  loginWithJwt(user: JwtSignProps) {
     const payload: JwtPayload = {
-      username: user.email,
+      email: user.email,
       sub: user.userId,
     };
     return {
