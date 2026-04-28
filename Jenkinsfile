@@ -3,9 +3,8 @@ pipeline {
 
   environment {
     APP_NAME = "ai-chatbot-gateway"
-    REGISTRY_ORG = "xeff09"
-    IMAGE_NAME = "${REGISTRY_ORG}/${APP_NAME}"
-    LATEST_TAG = "latest"
+    REGISTRY = "xeff09"
+    IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
   }
 
   stages {
@@ -16,43 +15,61 @@ pipeline {
       }
     }
 
-    stage('Build') {
+    stage('Set Version') {
       steps {
         script {
           env.SHORT_SHA = env.GIT_COMMIT.take(7)
-
-          sh """
-            docker build -f prod.Dockerfile \
-              -t ${IMAGE_NAME}:${SHORT_SHA} \
-              -t ${IMAGE_NAME}:${LATEST_TAG} .
-          """
         }
       }
     }
 
-    stage('Push to registry') {
+    stage('PR Build & Test') {
+      when {
+        changeRequest()
+      }
+      steps {
+        sh """
+          echo "Running PR validation..."
+          docker build -f dev.Dockerfile -t ${IMAGE_NAME}:pr-${SHORT_SHA} .
+        """
+      }
+    }
+
+    stage('Prod Build') {
       when {
         allOf {
           branch 'main'
-          expression { return isMergeFromDevelop() }
+          not { changeRequest() }
         }
       }
       steps {
         sh """
-          docker push ${IMAGE_NAME}:${LATEST_TAG}
+          docker build -f prod.Dockerfile \
+            -t ${IMAGE_NAME}:${SHORT_SHA} \
+            -t ${IMAGE_NAME}:latest .
+        """
+      }
+    }
+
+    stage('Push') {
+      when {
+        branch 'main'
+      }
+      steps {
+        sh """
+          docker push ${IMAGE_NAME}:${SHORT_SHA}
+          docker push ${IMAGE_NAME}:latest
         """
       }
     }
 
     stage('Deploy') {
       when {
-        allOf {
-          branch 'main'
-          expression { return isMergeFromDevelop() }
-        }
+        branch 'main'
       }
       steps {
         sh """
+          docker compose -f docker-compose.prod.yml pull
           docker compose -f docker-compose.prod.yml up -d
         """
       }
@@ -61,10 +78,10 @@ pipeline {
 
   post {
     success {
-      echo "✅ Pipeline success"
+      echo "✅ Build passed"
     }
     failure {
-      echo "❌ Pipeline failed"
+      echo "❌ Build failed"
     }
   }
 }
@@ -72,15 +89,13 @@ pipeline {
 def isMergeFromDevelop() {
   def changeLogSets = currentBuild.changeSets
 
-  if (changeLogSets == null || changeLogSets.isEmpty()) {
-    return false
-  }
+  if (!changeLogSets) return false
 
   for (changeSet in changeLogSets) {
     for (entry in changeSet.items) {
       def msg = entry.msg?.toLowerCase()
 
-      if (msg != null && msg.contains("merge") && msg.contains("develop")) {
+      if (msg?.contains("merge") && msg?.contains("develop")) {
         return true
       }
     }
