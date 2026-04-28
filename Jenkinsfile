@@ -90,10 +90,10 @@ pipeline {
           set -e
 
           echo "Pulling latest image..."
-          docker compose -f docker-compose.prod.yml pull
+          docker-compose -f docker-compose.prod.yml pull
 
           echo "Starting containers..."
-          docker compose -f docker-compose.prod.yml up -d
+          docker-compose -f docker-compose.prod.yml up -d
 
           echo "Done."
         '''
