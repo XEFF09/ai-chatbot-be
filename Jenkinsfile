@@ -22,28 +22,33 @@ pipeline {
         }
       }
     }
-    
-    stage('PR Build & Test') {
-      when {
-        changeRequest()
-      }
-      steps {
-        sh """
-          echo "Running PR validation..."
-          docker build -f ./docker/dev.Dockerfile -t ${IMAGE_NAME}:pr-${SHORT_SHA} .
-        """
-      }
-    }
 
-    stage('Prod Build') {
+    stage('PR Build & Test (dev)') {
       when {
         allOf {
-          branch 'main'
-          not { changeRequest() }
+          changeRequest()
+          expression { env.CHANGE_TARGET == 'dev' }
         }
       }
       steps {
         sh """
+          echo "PR: feature -> dev"
+          docker build -f ./docker/dev.Dockerfile \
+            -t ${IMAGE_NAME}:pr-${SHORT_SHA} .
+        """
+      }
+    }
+
+    stage('Prod Build (dev -> main PR)') {
+      when {
+        allOf {
+          changeRequest()
+          expression { env.CHANGE_TARGET == 'main' }
+        }
+      }
+      steps {
+        sh """
+          echo "PR: dev -> main (prod build)"
           docker build -f ./docker/prod.Dockerfile \
             -t ${IMAGE_NAME}:${SHORT_SHA} \
             -t ${IMAGE_NAME}:latest .
@@ -51,9 +56,12 @@ pipeline {
       }
     }
 
-    stage('Login Docker Hub') {
+    stage('Login Docker Hub (dev -> main PR)') {
       when {
-        branch 'main'
+        allOf {
+          changeRequest()
+          expression { env.CHANGE_TARGET == 'main' }
+        }
       }
       steps {
         withCredentials([usernamePassword(
@@ -68,9 +76,12 @@ pipeline {
       }
     }
 
-    stage('Push') {
+    stage('Push (dev -> main PR)') {
       when {
-        branch 'main'
+        allOf {
+          changeRequest()
+          expression { env.CHANGE_TARGET == 'main' }
+        }
       }
       steps {
         sh """
@@ -83,10 +94,10 @@ pipeline {
 
   post {
     success {
-      echo "✅ Build passed"
+      echo "✅ Pipeline success"
     }
     failure {
-      echo "❌ Build failed"
+      echo "❌ Pipeline failed"
     }
   }
 }
