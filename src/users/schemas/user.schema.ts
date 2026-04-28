@@ -16,11 +16,14 @@ export class User {
   @Prop({ required: true })
   username: string;
 
-  @Prop({ required: true, minLength: 6 })
+  @Prop({ minLength: 6 })
   password: string;
 
   @Prop({ enum: [UserRole.ADMIN, UserRole.USER], default: UserRole.USER })
   role: string;
+
+  @Prop()
+  googleId: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

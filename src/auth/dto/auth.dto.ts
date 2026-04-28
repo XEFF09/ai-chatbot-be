@@ -1,14 +1,14 @@
 import { IsString, IsEmail, MinLength } from 'class-validator';
 
-export class RegisterAuthDto {
+export class AuthDto {
   @IsEmail()
   @IsString()
-  readonly email: string;
+  email: string;
 
   @IsString()
-  readonly username: string;
+  username: string;
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password?: string;
 }

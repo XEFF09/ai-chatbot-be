@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseConfig } from './entities/database';
 import { EnvService } from './env.service';
+import { GoogleOauthConfig } from './entities/googleOauth';
+import { ApiConfig } from './entities/api';
 
 @Injectable()
 export class ConfigService {
@@ -19,5 +21,18 @@ export class ConfigService {
 
   get jwtSecret(): string {
     return this.env.get('JWT_SECRET');
+  }
+
+  get googleOauth(): GoogleOauthConfig {
+    return {
+      clientId: this.env.get('GOOGLE_CLIENT_ID'),
+      clientSecret: this.env.get('GOOGLE_CLIENT_SECRET'),
+    };
+  }
+
+  get api(): ApiConfig {
+    return {
+      baseUrl: this.env.get('BASE_URL'),
+    };
   }
 }

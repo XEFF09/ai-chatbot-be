@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { RegisterAuthDto } from './dto/register-auth.dto';
+import { AuthDto } from './dto/auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -49,20 +49,51 @@ export class AuthService {
     };
   }
 
-  async register(registerAuthDto: RegisterAuthDto) {
-    const hashedPass = await argon2.hash(registerAuthDto.password);
-    registerAuthDto.password = hashedPass;
+  async loginWithProvider(req: AuthDto) {
+    const { email, username } = req;
+    const user = await this.userModel.findOne({ email }).exec();
 
-    const res = await new this.userModel(registerAuthDto).save();
+    if (!user) {
+      const registerAuthDto: AuthDto = {
+        email: email,
+        username: username,
+      };
+      const res = await new this.userModel(registerAuthDto).save();
+
+      if (!res) {
+        throw new InternalServerErrorException(
+          `could not save user:${registerAuthDto.email} to database`,
+        );
+      }
+    }
+
+    const payload: JwtPayload = {
+      email: email,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
+  }
+
+  async register(req: AuthDto) {
+    if (req.password === undefined) {
+      throw new InternalServerErrorException(`password is required`);
+    }
+
+    const hashedPass = await argon2.hash(req.password);
+    req.password = hashedPass;
+
+    const res = await new this.userModel(req).save();
 
     if (!res) {
       throw new InternalServerErrorException(
-        `could not save user:${registerAuthDto.email} to database`,
+        `could not save user:${req.email} to database`,
       );
     }
 
     return {
-      message: `user:${registerAuthDto.email} created successfully`,
+      message: `user:${req.email} created successfully`,
     };
   }
 }
