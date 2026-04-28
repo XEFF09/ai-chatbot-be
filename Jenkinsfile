@@ -1,9 +1,10 @@
 pipeline {
+
   agent any
 
   environment {
     APP_NAME = "ai-chatbot-gateway"
-    REGISTRY = "xeff09"
+    REGISTRY  = "xeff09"
     IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
   }
 
@@ -26,22 +27,11 @@ pipeline {
       }
     }
 
-    stage('Debug PR Info') {
-      steps {
-        sh """
-          echo "CHANGE_ID=${env.CHANGE_ID}"
-          echo "CHANGE_BRANCH=${env.CHANGE_BRANCH}"
-          echo "CHANGE_TARGET=${env.CHANGE_TARGET}"
-          echo "BRANCH_NAME=${env.BRANCH_NAME}"
-        """
-      }
-    }
-
-    stage('PR Build & Test (dev)') {
+    // ── PR: feature → dev ──────────────────────────────────────────
+    stage('PR Build & Test (feature → dev)') {
       when {
         allOf {
-          changeRequest()
-          expression { env.CHANGE_TARGET == 'dev' }
+          changeRequest target: 'dev'
         }
       }
       steps {
@@ -53,12 +43,10 @@ pipeline {
       }
     }
 
-    stage('Prod Build (dev -> main PR)') {
+    // ── PR: dev → main ─────────────────────────────────────────────
+    stage('Prod Build (dev → main)') {
       when {
-        allOf {
-          changeRequest()
-          expression { env.CHANGE_TARGET == 'main' }
-        }
+        changeRequest target: 'main'
       }
       steps {
         sh """
@@ -70,12 +58,9 @@ pipeline {
       }
     }
 
-    stage('Login Docker Hub (dev -> main PR)') {
+    stage('Login Docker Hub (dev → main)') {
       when {
-        allOf {
-          changeRequest()
-          expression { env.CHANGE_TARGET == 'main' }
-        }
+        changeRequest target: 'main'
       }
       steps {
         withCredentials([usernamePassword(
@@ -83,19 +68,14 @@ pipeline {
           usernameVariable: 'USER',
           passwordVariable: 'PASS'
         )]) {
-          sh '''
-            echo "$PASS" | docker login -u "$USER" --password-stdin
-          '''
+          sh '''echo "$PASS" | docker login -u "$USER" --password-stdin'''
         }
       }
     }
 
-    stage('Push (dev -> main PR)') {
+    stage('Push (dev → main)') {
       when {
-        allOf {
-          changeRequest()
-          expression { env.CHANGE_TARGET == 'main' }
-        }
+        changeRequest target: 'main'
       }
       steps {
         sh """
@@ -104,14 +84,11 @@ pipeline {
         """
       }
     }
+
   }
 
   post {
-    success {
-      echo "✅ Pipeline success"
-    }
-    failure {
-      echo "❌ Pipeline failed"
-    }
+    success { echo "✅ Pipeline success" }
+    failure { echo "❌ Pipeline failed" }
   }
 }
