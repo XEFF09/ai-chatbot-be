@@ -36,7 +36,7 @@ pipeline {
       steps {
         sh """
           echo "Running PR validation..."
-          docker build -f dev.Dockerfile -t ${IMAGE_NAME}:pr-${SHORT_SHA} .
+          docker build -f ./docker/dev.Dockerfile -t ${IMAGE_NAME}:pr-${SHORT_SHA} .
         """
       }
     }
@@ -50,7 +50,7 @@ pipeline {
       }
       steps {
         sh """
-          docker build -f prod.Dockerfile \
+          docker build -f ./docker/prod.Dockerfile \
             -t ${IMAGE_NAME}:${SHORT_SHA} \
             -t ${IMAGE_NAME}:latest .
         """
