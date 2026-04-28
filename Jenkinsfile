@@ -22,6 +22,12 @@ pipeline {
         }
       }
     }
+    
+    stage('Debug Workspace') {
+      steps {
+        sh 'ls -la'
+      }
+    }
 
     stage('PR Build & Test') {
       when {
