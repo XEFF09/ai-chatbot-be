@@ -2,7 +2,7 @@ services:
   gateway:
     build:
       context: .
-      dockerfile: docker/dev.Dockerfile
+      dockerfile: docker/prod.Dockerfile
     ports:
       - '${APP_PORT}:3000'
     depends_on:
@@ -21,7 +21,6 @@ services:
     volumes:
       - .:/usr/src/app:delegated
       - /usr/src/app/node_modules
-    command: pnpm run start:dev
     networks:
       - local-network
 
