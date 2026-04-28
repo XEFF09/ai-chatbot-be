@@ -1,6 +1,5 @@
 services:
   gateway:
-    image: ${REGISTRY_ORG}/${APP_NAME}:latest
     build:
       context: .
       dockerfile: docker/prod.Dockerfile
