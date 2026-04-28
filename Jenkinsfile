@@ -23,12 +23,6 @@ pipeline {
       }
     }
     
-    stage('Debug Workspace') {
-      steps {
-        sh 'ls -la'
-      }
-    }
-
     stage('PR Build & Test') {
       when {
         changeRequest()
@@ -58,6 +52,9 @@ pipeline {
     }
 
     stage('Login Docker Hub') {
+      when {
+        branch 'main'
+      }
       steps {
         withCredentials([usernamePassword(
           credentialsId: '9dee4997-e1bf-41e0-8c12-58fdfe122c33',
@@ -82,23 +79,6 @@ pipeline {
         """
       }
     }
-
-    stage('Deploy') {
-      when { branch 'main' }
-      steps {
-        sh '''
-          set -e
-
-          echo "Pulling latest image..."
-          docker compose -f docker-compose.prod.yml pull
-
-          echo "Starting containers..."
-          docker compose -f docker-compose.prod.yml up -d
-
-          echo "Done."
-        '''
-      }
-    }
   }
 
   post {
@@ -109,22 +89,4 @@ pipeline {
       echo "❌ Build failed"
     }
   }
-}
-
-def isMergeFromDevelop() {
-  def changeLogSets = currentBuild.changeSets
-
-  if (!changeLogSets) return false
-
-  for (changeSet in changeLogSets) {
-    for (entry in changeSet.items) {
-      def msg = entry.msg?.toLowerCase()
-
-      if (msg?.contains("merge") && msg?.contains("develop")) {
-        return true
-      }
-    }
-  }
-
-  return false
 }
