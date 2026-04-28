@@ -1,20 +1,20 @@
 pipeline {
   agent any
+
   environment {
-    APP_NAME  = "ai-chatbot-gateway"
-    REGISTRY  = "xeff09"
+    APP_NAME   = "ai-chatbot-gateway"
+    REGISTRY   = "xeff09"
     IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
   }
+
   stages {
 
-    // Runs on every PR and every branch push
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
 
-    // Runs on every PR and every branch push
     stage('Set Version') {
       steps {
         script {
@@ -26,8 +26,7 @@ pipeline {
       }
     }
 
-    // PR: feature → dev
-    stage('PR Build & Test (feature → dev)') {
+    stage('PR Build & Test (feature -> dev)') {
       when {
         changeRequest target: 'dev'
       }
@@ -40,8 +39,7 @@ pipeline {
       }
     }
 
-    // PR: dev → main
-    stage('Prod Build (dev → main PR)') {
+    stage('Prod Build (dev -> main PR)') {
       when {
         changeRequest target: 'main'
       }
@@ -55,7 +53,6 @@ pipeline {
       }
     }
 
-    // After merge → main (push to main triggers this)
     stage('Login Docker Hub (after merge to main)') {
       when {
         branch 'main'
@@ -66,12 +63,11 @@ pipeline {
           usernameVariable: 'USER',
           passwordVariable: 'PASS'
         )]) {
-          sh '''echo "$PASS" | docker login -u "$USER" --password-stdin'''
+          sh 'echo "$PASS" | docker login -u "$USER" --password-stdin'
         }
       }
     }
 
-    // After merge → main: build final image and push
     stage('Prod Build & Push (after merge to main)') {
       when {
         branch 'main'
@@ -81,4 +77,16 @@ pipeline {
           docker build -f ./docker/prod.Dockerfile \
             -t ${IMAGE_NAME}:${SHORT_SHA} \
             -t ${IMAGE_NAME}:latest .
-          docker push ${IMAGE_NA
+          docker push ${IMAGE_NAME}:${SHORT_SHA}
+          docker push ${IMAGE_NAME}:latest
+        """
+      }
+    }
+
+  }
+
+  post {
+    success { echo "Pipeline success" }
+    failure { echo "Pipeline failed" }
+  }
+}
