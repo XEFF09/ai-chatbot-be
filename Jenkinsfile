@@ -26,6 +26,16 @@ pipeline {
       }
     }
 
+    stage('Debug PR Info') {
+      steps {
+        sh """
+          echo "CHANGE_ID=$CHANGE_ID"
+          echo "CHANGE_BRANCH=$CHANGE_BRANCH"
+          echo "CHANGE_TARGET=$CHANGE_TARGET"
+        """
+      }
+    }
+
     stage('PR Build & Test (dev)') {
       when {
         allOf {
