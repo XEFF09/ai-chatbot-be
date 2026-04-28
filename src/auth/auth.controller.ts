@@ -25,10 +25,11 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('/sign-in')
   login(
-    @Request() req: JwtSignProps,
+    @Request() req: Request & { user: JwtSignProps },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { access_token } = this.authService.loginWithJwt(req);
+    const { user } = req;
+    const { access_token } = this.authService.loginWithJwt(user);
 
     res.cookie('access_token', access_token, {
       httpOnly: true,

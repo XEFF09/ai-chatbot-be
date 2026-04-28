@@ -10,6 +10,7 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload, JwtSignProps } from './types/type.jwt';
+import { UserRole } from 'src/types/type.role';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +35,7 @@ export class AuthService {
     const signProps: JwtSignProps = {
       email: user.email,
       userId: user._id.toString(),
+      role: user.role as UserRole,
     };
 
     return signProps;
@@ -43,6 +45,7 @@ export class AuthService {
     const payload: JwtPayload = {
       email: user.email,
       sub: user.userId,
+      role: user.role,
     };
     return {
       access_token: this.jwtService.sign(payload),
@@ -65,10 +68,22 @@ export class AuthService {
           `could not save user:${registerAuthDto.email} to database`,
         );
       }
+
+      const payload: JwtPayload = {
+        email: res.email,
+        sub: res._id.toString(),
+        role: res.role as UserRole,
+      };
+
+      return {
+        access_token: this.jwtService.sign(payload),
+      };
     }
 
     const payload: JwtPayload = {
-      email: email,
+      email: user.email,
+      sub: user._id.toString(),
+      role: user.role as UserRole,
     };
 
     return {

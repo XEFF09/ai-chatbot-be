@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -7,6 +8,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { JwtSignProps } from 'src/auth/types/type.jwt';
+import { UserRole } from 'src/types/type.role';
 
 @Injectable()
 export class UsersService {
@@ -27,11 +30,17 @@ export class UsersService {
     };
   }
 
-  async findOne(email: string) {
+  async findOne(email: string, loginUser: JwtSignProps) {
     const res = await this.userModel.findOne({ email }).exec();
 
     if (!res) {
       throw new NotFoundException(`user:${email} not found`);
+    }
+
+    if (res.email !== loginUser.email && loginUser.role != UserRole.Admin) {
+      throw new ForbiddenException(
+        `no permission to access user:${email} data`,
+      );
     }
 
     return {

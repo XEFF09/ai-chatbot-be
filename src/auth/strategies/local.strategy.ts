@@ -11,12 +11,12 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(email: string, password: string): Promise<JwtSignProps> {
-    const user = await this.authService.validateUser(email, password);
+    const jwtProps = await this.authService.validateUser(email, password);
 
-    if (!user) {
+    if (!jwtProps) {
       throw new UnauthorizedException(`invalid credentials`);
     }
 
-    return user;
+    return jwtProps;
   }
 }
