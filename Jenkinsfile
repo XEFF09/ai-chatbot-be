@@ -1,21 +1,20 @@
 pipeline {
-
   agent any
-
   environment {
-    APP_NAME = "ai-chatbot-gateway"
+    APP_NAME  = "ai-chatbot-gateway"
     REGISTRY  = "xeff09"
     IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
   }
-
   stages {
 
+    // Runs on every PR and every branch push
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
 
+    // Runs on every PR and every branch push
     stage('Set Version') {
       steps {
         script {
@@ -27,12 +26,10 @@ pipeline {
       }
     }
 
-    // ── PR: feature → dev ──────────────────────────────────────────
+    // PR: feature → dev
     stage('PR Build & Test (feature → dev)') {
       when {
-        allOf {
-          changeRequest target: 'dev'
-        }
+        changeRequest target: 'dev'
       }
       steps {
         sh """
@@ -43,14 +40,14 @@ pipeline {
       }
     }
 
-    // ── PR: dev → main ─────────────────────────────────────────────
-    stage('Prod Build (dev → main)') {
+    // PR: dev → main
+    stage('Prod Build (dev → main PR)') {
       when {
         changeRequest target: 'main'
       }
       steps {
         sh """
-          echo "PR: dev -> main (prod build)"
+          echo "PR: dev -> main (prod build preview)"
           docker build -f ./docker/prod.Dockerfile \
             -t ${IMAGE_NAME}:${SHORT_SHA} \
             -t ${IMAGE_NAME}:latest .
@@ -58,9 +55,10 @@ pipeline {
       }
     }
 
-    stage('Login Docker Hub (dev → main)') {
+    // After merge → main (push to main triggers this)
+    stage('Login Docker Hub (after merge to main)') {
       when {
-        changeRequest target: 'main'
+        branch 'main'
       }
       steps {
         withCredentials([usernamePassword(
@@ -73,22 +71,14 @@ pipeline {
       }
     }
 
-    stage('Push (dev → main)') {
+    // After merge → main: build final image and push
+    stage('Prod Build & Push (after merge to main)') {
       when {
-        changeRequest target: 'main'
+        branch 'main'
       }
       steps {
         sh """
-          docker push ${IMAGE_NAME}:${SHORT_SHA}
-          docker push ${IMAGE_NAME}:latest
-        """
-      }
-    }
-
-  }
-
-  post {
-    success { echo "✅ Pipeline success" }
-    failure { echo "❌ Pipeline failed" }
-  }
-}
+          docker build -f ./docker/prod.Dockerfile \
+            -t ${IMAGE_NAME}:${SHORT_SHA} \
+            -t ${IMAGE_NAME}:latest .
+          docker push ${IMAGE_NA
