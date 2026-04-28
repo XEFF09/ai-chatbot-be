@@ -57,6 +57,20 @@ pipeline {
       }
     }
 
+    stage('Login Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: '9dee4997-e1bf-41e0-8c12-58fdfe122c33',
+          usernameVariable: 'USER',
+          passwordVariable: 'PASS'
+        )]) {
+          sh '''
+            echo "$PASS" | docker login -u "$USER" --password-stdin
+          '''
+        }
+      }
+    }
+
     stage('Push') {
       when {
         branch 'main'
