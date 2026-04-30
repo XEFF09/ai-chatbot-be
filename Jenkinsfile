@@ -56,7 +56,10 @@ pipeline {
 
       stage('Initialize') {
         when {
-            changeRequest()
+          anyOf {
+              changeRequest()
+              branch 'main'
+            }
           }
           steps {
               checkout scm
@@ -86,10 +89,13 @@ pipeline {
 
       stage('Prod Build') {
           when {
+            anyOf {
               allOf {
                   changeRequest target: 'main' 
                   expression { env.CHANGE_BRANCH == 'develop' }
               }
+              branch 'main'
+            }
           }
           steps {
               echo "Building PROD image for PR #${env.CHANGE_ID}: ${env.CHANGE_BRANCH} -> ${env.CHANGE_TARGET}"
