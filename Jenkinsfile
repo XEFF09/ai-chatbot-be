@@ -17,14 +17,18 @@ pipeline {
             }
         }
 
-        stage('Debugging') {
+        stage('Debug Full Env') {
             steps {
-                echo "Debug Info -------------------------------------"
-                echo "${env.CHANGE_ID}"
-                echo "${env.CHANGE_BRANCH}"
-                echo "{$env.CHANGE_TARGET}"
-              }
-          }
+                sh '''
+                    echo "=== BRANCH INFO ==="
+                    echo "BRANCH_NAME=$BRANCH_NAME"
+                    echo "CHANGE_ID=$CHANGE_ID"
+                    echo "CHANGE_BRANCH=$CHANGE_BRANCH"
+                    echo "CHANGE_TARGET=$CHANGE_TARGET"
+                    echo "JOB_NAME=$JOB_NAME"
+                '''
+            }
+        }
 
         stage('Dev Build') {
             when {
