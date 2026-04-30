@@ -17,24 +17,11 @@ pipeline {
             }
         }
 
-        stage('Debug Full Env') {
-            steps {
-                sh '''
-                    echo "=== BRANCH INFO ==="
-                    echo "BRANCH_NAME=$BRANCH_NAME"
-                    echo "CHANGE_ID=$CHANGE_ID"
-                    echo "CHANGE_BRANCH=$CHANGE_BRANCH"
-                    echo "CHANGE_TARGET=$CHANGE_TARGET"
-                    echo "JOB_NAME=$JOB_NAME"
-                '''
-            }
-        }
-
         stage('Dev Build') {
             when {
                 allOf {
-                    changeRequest target: 'develop'
-                    expression { env.CHANGE_BRANCH ==~ /^feature-.*/ }
+                  changeRequest target: 'develop'
+                  expression { env.CHANGE_BRANCH ==~ /^feature\/.*/ }
                 }
             }
             steps {
