@@ -12,30 +12,45 @@ pipeline {
               changeRequest()
           }
           steps {
-            def rules = [
-                "feature/*": ["develop"],
-                "develop": ["main"]
-            ]
+              script {
 
-            def isValidTransition(source, target, rules) {
-                return rules.find { from, toList ->
-                    def match = (from.contains("*") && source ==~ from.replace("*", ".*")) ||
-                                (!from.contains("*") && source == from)
+                  def rules = [
+                      "feature/*": ["develop"],
+                      "develop": ["main"]
+                  ]
 
-                    return match && toList.contains(target)
-                } != null
-            }
+                  def isValidTransition = { source, target, rulesMap ->
 
-            script {
-                def source = env.CHANGE_BRANCH
-                def target = env.CHANGE_TARGET
+                      return rulesMap.find { from, toList ->
 
-                if (!isValidTransition(source, target, rules)) {
-                    error("❌ Invalid PR flow: ${source} → ${target}")
-                }
+                          def match =
+                              (from.contains("*") && source ==~ from.replace("*", ".*")) ||
+                              (!from.contains("*") && source == from)
 
-                echo "✅ Valid transition"
-            }
+                          return match && toList.contains(target)
+                      } != null
+                  }
+
+                  def source = env.CHANGE_BRANCH
+                  def target = env.CHANGE_TARGET
+
+                  echo "PR check: ${source} -> ${target}"
+
+                  if (!isValidTransition(source, target, rules)) {
+                      error("""
+                        ❌ Invalid PR flow detected!
+
+                        Allowed flows:
+                        - feature/* → develop
+                        - develop → main
+
+                        But got:
+                        - ${source} → ${target}
+                      """)
+                  }
+
+                  echo "✅ Valid transition"
+              }
           }
       }
 
