@@ -20,9 +20,9 @@ pipeline {
         stage('Debugging') {
             steps {
                 echo "Debug Info -------------------------------------"
-                echo "$env.CHANGE_ID"
-                echo "$env.CHANGE_BRANCH"
-                echo "$env.CHANGE_TARGET"
+                echo "${env.CHANGE_ID}"
+                echo "${env.CHANGE_BRANCH}"
+                echo "{$env.CHANGE_TARGET}"
               }
           }
 
