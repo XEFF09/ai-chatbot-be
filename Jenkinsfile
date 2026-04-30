@@ -7,6 +7,37 @@ pipeline {
     }
 
     stages {
+      stage('PR Guard') {
+          when {
+              changeRequest()
+          }
+          steps {
+            def rules = [
+                "feature/*": ["develop"],
+                "develop": ["main"]
+            ]
+
+            def isValidTransition(source, target, rules) {
+                return rules.find { from, toList ->
+                    def match = (from.contains("*") && source ==~ from.replace("*", ".*")) ||
+                                (!from.contains("*") && source == from)
+
+                    return match && toList.contains(target)
+                } != null
+            }
+
+            script {
+                def source = env.CHANGE_BRANCH
+                def target = env.CHANGE_TARGET
+
+                if (!isValidTransition(source, target, rules)) {
+                    error("❌ Invalid PR flow: ${source} → ${target}")
+                }
+
+                echo "✅ Valid transition"
+            }
+          }
+      }
 
       stage('Initialize') {
         when {
