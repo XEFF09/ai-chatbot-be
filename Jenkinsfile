@@ -1,13 +1,13 @@
 pipeline {
-    agent any
-
+    agent any 
     environment {
         APP_NAME = "ai-chatbot-gateway"
-        REGISTRY = "xeff09"
-        IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
+        REGISTRY_ORG = "xeff09"
+        IMAGE_NAME = "${REGISTRY_ORG}/${APP_NAME}"
     }
 
     stages {
+
         stage('Initialize') {
             steps {
                 checkout scm
@@ -17,57 +17,67 @@ pipeline {
             }
         }
 
-        // Triggered when a PR is OPEN targeting 'dev'
-        stage('PR Build (feature → dev)') {
+        stage('Dev Build') {
             when {
                 allOf {
-                    changeRequest() 
-                    expression { env.CHANGE_TARGET == 'dev' }
+                    changeRequest target: 'develop'
+                    expression { env.CHANGE_BRANCH ==~ /^feature-.*/ }
                 }
             }
             steps {
-                echo "PR Target is: ${env.CHANGE_TARGET}"
-                sh "docker build -f ./docker/dev.Dockerfile -t ${IMAGE_NAME}:pr-${SHORT_SHA} ."
+                echo "Building DEV image for PR #${env.CHANGE_ID}: ${env.CHANGE_BRANCH} -> ${env.CHANGE_TARGET}"
+                sh "docker build -t ${APP_NAME}:dev -f ./docker/dev.Dockerfile ."
+            }
+            post {
+                always {
+                    sh "docker rmi ${APP_NAME}:dev || true"
+                }
             }
         }
 
-        // Triggered when a PR is OPEN targeting 'main'
-        stage('Prod Release Prep (dev → main)') {
+        stage('Prod Build') {
             when {
-                changeRequest target: 'main'
-            }
-            steps {
-                echo "Preparing production image for PR ${env.CHANGE_ID}"
-                
-                // Build Prod Image
-                sh """
-                    docker build -f ./docker/prod.Dockerfile \
-                        -t ${IMAGE_NAME}:${SHORT_SHA} \
-                        -t ${IMAGE_NAME}:latest .
-                """
-                
-                // Login and Push
-                withCredentials([usernamePassword(
-                    credentialsId: '9dee4997-e1bf-41e0-8c12-58fdfe122c33',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
-                    sh 'echo "$PASS" | docker login -u "$USER" --password-stdin'
-                    sh """
-                        docker push ${IMAGE_NAME}:${SHORT_SHA}
-                        docker push ${IMAGE_NAME}:latest
-                    """
+                allOf {
+                    changeRequest target: 'main' 
+                    expression { env.CHANGE_BRANCH == 'develop' }
                 }
             }
+            steps {
+                echo "Building PROD image for PR #${env.CHANGE_ID}: ${env.CHANGE_BRANCH} -> ${env.CHANGE_TARGET}"
+                sh "docker build -t ${APP_NAME}:latest -f ./docker/prod.Dockerfile ."
+                sh "docker build -t ${APP_NAME}:${SHORT_SHA} -f ./docker/prod.Dockerfile ."
+            }
+        }
+
+        stage('Login & Push to Registry') {
+          when {
+              allOf {
+                  changeRequest target: 'main' 
+                  expression { env.CHANGE_BRANCH == 'develop' }
+              }
+          }
+          steps {
+              echo "Logging in to Docker registry and pushing images for PR #${env.CHANGE_ID}"
+              withCredentials([usernamePassword(
+                  credentialsId: '9dee4997-e1bf-41e0-8c12-58fdfe122c33',
+                  usernameVariable: 'USER',
+                  passwordVariable: 'PASS'
+              )]) {
+                  sh 'echo "$PASS" | docker login -u "$USER" --password-stdin'
+                  sh """
+                      docker push ${IMAGE_NAME}:${SHORT_SHA}
+                      docker push ${IMAGE_NAME}:latest
+                  """
+              }
+          }
         }
     }
 
     post {
         always {
-            // Clean up Docker credentials on the agent
             sh 'docker logout || true'
         }
-        success { echo "✅ Pipeline completed successfully for ${env.BRANCH_NAME}" }
+        success { echo "✅ Pipeline completed successfully" }
         failure { echo "❌ Pipeline failed" }
     }
 }
