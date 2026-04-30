@@ -9,6 +9,9 @@ pipeline {
     stages {
 
         stage('Initialize') {
+          when {
+              changeRequest()
+            }
             steps {
                 checkout scm
                 script {
@@ -26,11 +29,11 @@ pipeline {
             }
             steps {
                 echo "Building DEV image for PR #${env.CHANGE_ID}: ${env.CHANGE_BRANCH} -> ${env.CHANGE_TARGET}"
-                sh "docker build -t ${APP_NAME}:dev -f ./docker/dev.Dockerfile ."
+                sh "docker build -t ${IMAGE_NAME}:dev -f ./docker/dev.Dockerfile ."
             }
             post {
                 always {
-                    sh "docker rmi ${APP_NAME}:dev || true"
+                    sh "docker rmi ${IMAGE_NAME}:dev || true"
                 }
             }
         }
@@ -44,8 +47,8 @@ pipeline {
             }
             steps {
                 echo "Building PROD image for PR #${env.CHANGE_ID}: ${env.CHANGE_BRANCH} -> ${env.CHANGE_TARGET}"
-                sh "docker build -t ${APP_NAME}:latest -f ./docker/prod.Dockerfile ."
-                sh "docker build -t ${APP_NAME}:${SHORT_SHA} -f ./docker/prod.Dockerfile ."
+                sh "docker build -t ${IMAGE_NAME}:latest -f ./docker/prod.Dockerfile ."
+                sh "docker build -t ${IMAGE_NAME}:${SHORT_SHA} -f ./docker/prod.Dockerfile ."
             }
         }
 
