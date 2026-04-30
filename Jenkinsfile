@@ -17,6 +17,15 @@ pipeline {
             }
         }
 
+        stage('Debugging') {
+            steps {
+                echo "Debug Info -------------------------------------"
+                ehcho "$env.CHANGE_ID"
+                ehcho "$env.CHANGE_BRANCH"
+                ehcho "$env.CHANGE_TARGET"
+              }
+          }
+
         stage('Dev Build') {
             when {
                 allOf {
