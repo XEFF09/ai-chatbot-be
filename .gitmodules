@@ -1,0 +1,3 @@
+[submodule "protos"]
+	path = protos
+	url = git@github.com:XEFF09/ai-chatbot-protos.git
