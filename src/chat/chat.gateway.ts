@@ -30,41 +30,42 @@ export class ChatGateway {
     client.use(SocketAuthMiddleware() as any);
   }
 
-  @SubscribeMessage('startChat')
-  handleStartChat(@ConnectedSocket() client: Socket) {
-    try {
-      const upstream = new Subject<any>();
-      this.sessions.set(client.id, upstream);
-
-      const downstream = this.grpcService.streamChat(upstream);
-
-      downstream.subscribe({
-        next: (chunk) => client.emit('chatChunk', chunk),
-        error: (err) => {
-          console.error('Downstream gRPC Error:', err);
-          client.emit('error', 'AI Service Error');
-        },
-        complete: () => client.emit('chatComplete'),
-      });
-    } catch (err) {
-      console.error('Failed to initialize gRPC stream:', err);
-      client.disconnect();
-    }
-  }
   @SubscribeMessage('sendMessage')
   handleMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: ChatMessageRequestDTO,
   ) {
-    const upstream = this.sessions.get(client.id);
-    if (upstream) {
-      upstream.next({
-        userId: data.userId,
-        message: data.message,
-        agent: data.agent,
-        timestamp: Date.now(),
+    let upstream = this.sessions.get(client.id);
+
+    if (!upstream) {
+      upstream = new Subject<any>();
+      this.sessions.set(client.id, upstream);
+
+      const downstream = this.grpcService.streamChat(upstream.asObservable());
+
+      downstream.subscribe({
+        next: (chunk) => {
+          console.log('Gateway received chunk:', chunk);
+          client.emit('chatChunk', chunk);
+        },
+        error: (err) => {
+          console.error('gRPC Stream Error:', err);
+          client.emit('error', 'AI Service Error');
+          this.sessions.delete(client.id);
+        },
+        complete: () => {
+          client.emit('chatComplete');
+          this.sessions.delete(client.id);
+        },
       });
     }
+
+    upstream.next({
+      user_id: data.userId,
+      message: data.message,
+      agent: data.agent,
+      timestamp: Date.now(),
+    });
   }
 
   handleDisconnect(client: Socket) {

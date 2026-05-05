@@ -5,6 +5,8 @@ WORKDIR /usr/src/app
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
+COPY protos ./protos
+COPY src/genproto ./src/genproto
 
 RUN pnpm install
 

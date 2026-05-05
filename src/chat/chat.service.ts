@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import type { ClientGrpc } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import {
   ChatMessageRequest,
   ChatChunkResponse,
@@ -20,6 +20,8 @@ export class ChatService implements OnModuleInit {
   streamChat(
     upstream: Observable<ChatMessageRequest>,
   ): Observable<ChatChunkResponse> {
-    return this.chatService.chatStream(upstream);
+    return this.chatService
+      .chatStream(upstream)
+      .pipe(tap((val) => console.log('RAW GRPC DATA:', val)));
   }
 }
