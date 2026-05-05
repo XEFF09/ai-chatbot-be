@@ -32,7 +32,7 @@ export class AuthController {
     const { access_token } = this.authService.loginWithJwt(user);
 
     res.cookie('access_token', access_token, {
-      httpOnly: false,
+      httpOnly: true,
     });
 
     return {
@@ -59,7 +59,7 @@ export class AuthController {
     const { access_token } = await this.authService.loginWithProvider(authDto);
 
     res.cookie('access_token', access_token, {
-      httpOnly: false,
+      httpOnly: true,
     });
 
     res.redirect('/');
