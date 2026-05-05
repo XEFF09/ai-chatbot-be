@@ -12,7 +12,7 @@ import { join } from 'path';
         name: 'CHAT_PACKAGE',
         transport: Transport.GRPC,
         options: {
-          url: 'localhost:50051',
+          url: process.env.GRPC_CHAT_URL || 'grpc-server:50051',
           package: 'chat.v1',
           protoPath: join(process.cwd(), 'protos/chat/v1/service.proto'),
           loader: {
