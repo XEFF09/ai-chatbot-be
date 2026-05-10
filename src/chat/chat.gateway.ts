@@ -45,12 +45,10 @@ export class ChatGateway {
 
       downstream.subscribe({
         next: (chunk) => {
-          console.log('Gateway received chunk:', chunk);
           client.emit('chatChunk', chunk);
         },
         error: (err) => {
-          console.error('gRPC Stream Error:', err);
-          client.emit('error', 'AI Service Error');
+          client.emit('error', `AI Service Error ${err}`);
           this.sessions.delete(client.id);
         },
         complete: () => {
